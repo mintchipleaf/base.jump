@@ -296,7 +296,6 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		}
 	}
 
-
 	//movement
 	if (left) {
 		player.sprite = game.animations.get("player-left");
@@ -323,7 +322,11 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		var playervx = player.vx
 		if (player.collides(wall)) {
 			meter -= 100;
-			player.x = canvas.width /2; 
+			if (lastDirection == "right") {
+				player.vx = -10;
+			} else if (lastDirection == "left") {
+				player.vx = 10;
+			} 
 		}
 	}
 }, function(context) {
