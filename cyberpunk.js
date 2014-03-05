@@ -58,13 +58,13 @@ var manifest = {
 		"sign-left": {
 			"strip": "images/smallsign.png",
 			"frames": 1,
-			"msPerFrame": 70
+			"msPerFrame": 70,
+			"flip": "horizontal"
 		},
 		"sign-right": {
 			"strip": "images/smallsign.png",
 			"frames": 1,
-			"msPerFrame": 70,
-			"flip": "horizontal"
+			"msPerFrame": 70
 		},
 		"unit-left": {
 			"strip": "images/acunit.png",
@@ -76,6 +76,22 @@ var manifest = {
 			"frames": 1,
 			"msPerFrame": 70,
 			"flip": "horizontal"
+		},
+		"billboard-left": {
+			"strip": "images/billboard.png",
+			"frames": 1,
+			"msPerFrame": 70
+		},
+		"billboard-right": {
+			"strip": "images/billboard.png",
+			"frames": 1,
+			"msPerFrame": 70,
+			"flip": "horizontal"
+		},
+		"pickup": {
+			"strip": "images/pickup.png",
+			"frames": 1,
+			"msPerFrame": 70
 		}
 	}
 }
@@ -85,6 +101,7 @@ var game = new Splat.Game(canvas, manifest);
 var player;
 var walls = [];
 var obstacles = [];
+var pickups = [];
 var dead = false;
 var waitingToStart = true;
 var left = false;
@@ -123,7 +140,46 @@ function wallIsBelowScreen(y) {
 	return y > walls[0].y && y > walls[walls.length - 2].y;
 }
 
+function getLastLeftWall(y) {
+	if (walls.length > 1) {
+		return wallIsBelowScreen(y) ? walls[0] : walls[walls.length - 2];
+	}
+}
 
+function getLastRightWall(y) {
+	if (walls.length > 1) {
+		return wallIsBelowScreen(y) ? walls[1] : walls[walls.length - 1];
+	}
+}
+
+function makeObstacle(onRight, y, getWindowImages) {
+	var img;
+	var obstacle;
+
+	var wallImg = game.animations.get("wall-1-left");
+	var x = wallImg.width - 8;	
+	if (Math.random() > 0.3 || waitingToStart) {
+		img = game.animations.get(onRight ? "sign-right" : "sign-left");
+		if (onRight) {
+			obstacle = new Splat.AnimatedEntity(canvas.width - wallImg.width - img.width + 8 + 4, y + 10, 8, 211, img, -4, -10);
+		} else {
+			obstacle = new Splat.AnimatedEntity(x + 29, y + 10, 8, 211, img, -29, -10);
+		}
+	} else /*if (Math.random() > 0.5)*/ {
+		img = game.animations.get(onRight ? "unit-right" : "unit-left");
+		obstacle = new Splat.AnimatedEntity(x, y, img.width, img.height, img, 0, 0);
+		if (onRight) {
+			obstacle.x = canvas.width - wallImg.width - img.width + 8;
+		}
+	} /*else {
+		img = game.animations.get(onRight ? "billboard-right" : "billboard-left");
+		obstacle = new Splat.AnimatedEntity(x, y, img.width, img.height, img, 0, 0);
+		if (onRight) {
+			obstacle.x = canvas.width - wallImg.width - img.width + 8;
+		}
+	}*/
+	obstacles.push(obstacle);
+}
 
 var lastObstacle = false;
 var i = 0;
@@ -135,7 +191,7 @@ function makeWall(y) {
 	if (i == 2) {
 		hasObstacle = true;
 		i = 0;
-	}
+	}	
 	lastObstacle = hasObstacle;
 
 	//var lastLeftWallIsWindow = isWindow(getLastLeftWall(y));
@@ -147,6 +203,7 @@ function makeWall(y) {
 		}
 		return Math.random() > 0.9 ? windowImages : wallImages;
 	}
+
 	if (hasObstacle) {
 		var onRight = Math.random() > 0.5;
 		chooseWall(y, onRight ? getWindowImages(true) : wallImages, true);
@@ -171,32 +228,37 @@ function populateWallsDown(scene) {
 	while (walls[walls.length - 1].y + walls[walls.length - 1].height < scene.camera.y) {
 		walls.pop();
 	}
-	obstacles = [];
+	//obstacles = [];
 }
 
-
-
-function makeObstacle(onRight, y, getWindowImages) {
-	var img;
-	var obstacle;
-
+function addPickups(scene) {
+	var lastPickup = pickups[pickups.length - 1];
+	var nextPickupY = scene.camera.y + scene.camera.height;
 	var wallImg = game.animations.get("wall-1-left");
-	var x = wallImg.width - 8;
-	if (Math.random() > 0.5) {
-		img = game.animations.get(onRight ? "sign-right" : "sign-left");
-		if (onRight) {
-			obstacle = new Splat.AnimatedEntity(canvas.width - wallImg.width - img.width + 8 + 4, y + 10, 8, 211, img, -4, -10);
-		} else {
-			obstacle = new Splat.AnimatedEntity(x + 29, y + 10, 8, 211, img, -29, -10);
-		}
-	} else {
-		img = game.animations.get(onRight ? "unit-right" : "unit-left");
-		obstacle = new Splat.AnimatedEntity(x, y, img.width, img.height, img, 0, 0);
-		if (onRight) {
-			obstacle.x = canvas.width - wallImg.width - img.width + 8;
-		}
+	var maxLeft = wallImg.width;
+	var maxRight = canvas.width - wallImg.width;
+	var nextPickupX = Math.random() * canvas.width;
+	var placePickup = false;
+	var pickupChance = Math.random();
+
+	if (!lastPickup) {
+		placePickup = true;
 	}
-	obstacles.push(obstacle);
+	if(lastPickup) {
+		if (pickupChance > 0.5) { 
+			nextPickupY += 800;
+		} else {
+			nextPickupY += 800;
+			placePickup = true;
+		}
+	 	if (lastPickup.y > scene.camera.y || nextPickupX > maxRight || nextPickupX < maxLeft ) {
+			placePickup = false;
+		}
+	} if (placePickup) {
+		var img = game.animations.get("pickup");
+		var pickup = new Splat.AnimatedEntity(nextPickupX, nextPickupY, img.width, img.height, img, 0, 0);
+		pickups.push(pickup);
+	}
 }
 
 function setBest(b) {
@@ -235,6 +297,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	}
 	if (!waitingToStart) {
 		player.vy += elapsedMillis * 0.00007;
+		addPickups(this);
 	}
 
 	//scoring
@@ -246,9 +309,16 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		}
 	}
 
-	if (player.vy < 0){
+	//don't allow upwards movement
+	if (player.vy < 0) {
 		player.vy = 0;
 	}
+
+	//cap meter at 1000
+	if (meter > 1000) {
+		meter = 1000;
+	}
+	
 	populateWallsDown(this);
 
 	this.camera.vy = player.vy;
@@ -261,20 +331,17 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		lastDirection = "left";
 		meter -= 1;
 		player.vx = -.7;
-	}
-	if (game.keyboard.isPressed("right")) {
+	} if (game.keyboard.isPressed("right")) {
 		right = true;
 		left = false;
 		meter -= 1;
 		lastDirection = "right";
 		player.vx = .7;
-	}
-	if (game.keyboard.isPressed("up")) {
-		player.vy -= .003;
-		meter -= 2;
+	} if (game.keyboard.isPressed("up")) {
+		player.vy -= .005;
+		meter -= 1.5;
 		up = true;
-	}
-	if (!game.keyboard.isPressed("left") && !game.keyboard.isPressed("right")) {
+	} if (!game.keyboard.isPressed("left") && !game.keyboard.isPressed("right")) {
 		player.vx = 0;
 	}
 
@@ -283,6 +350,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		dead = true;
 	}
 
+	//fade to black on death
 	if (dead) {
 		player.vx = 0;
 		player.vy = 0;
@@ -311,12 +379,14 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		up = false;
 	}
 
+	//background tiling
 	bgY -= this.camera.vy / 1.5 * elapsedMillis;
 	var bgH = game.images.get("bg").height;
 	if (bgY > bgH) {
 		bgY -= bgH;
 	}	
 
+	//wall collision
 	for (var i = 0; i < walls.length; i++) {
 		var wall = walls[i];
 		var playervx = player.vx
@@ -329,6 +399,48 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 			} 
 		}
 	}
+
+	//pickup collision
+	for (var i = 0; i < pickups.length; i++) {
+		var pickup = pickups[i];
+		if (player.collides(pickup) && !pickup.counted) {
+			meter += 200;
+			pickup.counted = true;
+		}
+	}
+
+	//obstacle collision
+	for (var i = 0; i < obstacles.length; i++) {
+		var obstacle = obstacles[i];
+		if (player.collides(obstacle)) {
+			/*if (!this.timer("flash")) {
+				var explode;
+				if (player.sprite.name.indexOf("left") > -1) {
+					explode = game.animations.get("player-explode-left");
+				} else {
+					explode = game.animations.get("player-explode-right");
+				}
+				explode.reset();
+				player.sprite = explode;
+
+				if (obstacle.sprite == game.animations.get("laser-left") || obstacle.sprite == game.animations.get("laser-right")) {
+					game.sounds.play("laser");
+				} else if (obstacle.sprite.name.indexOf("spikes") > -1) {
+					game.sounds.play("spikes");
+				}
+			}
+			this.startTimer("flash");*/
+			meter -= 100;
+			if (player.vy < 2) {
+				//player.vy = player.vy / 2;
+			} else {
+				player.vy -= 2;
+			}
+			player.x = (canvas.width / 2) - (player.width / 2)
+			return;
+		}
+	}
+
 }, function(context) {
 	this.camera.drawAbsolute(context, function() {
 	var bg = game.images.get("bg");
@@ -338,18 +450,17 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	}
 	});;
 
-	var wallW = game.animations.get("wall-1-left").width;
-	var meterW = canvas.width - wallW * 2;
-	context.fillStyle = "#BADA55"
-	context.fillRect(wallW, this.camera.y + 10, meterW * (meter / 1000), 30);
-
 	for (var i = 0; i < walls.length; i++) {
-		walls[i].draw(context);
+		walls[i].draw(context);		//draw walls
+	}
+	for (var i = 0; i < pickups.length; i++) {
+		if (!pickups[i].counted) {
+			pickups[i].draw(context);	//draw pickups
+		}
 	}
 	for (var i = 0; i < obstacles.length; i++) {
-		obstacles[i].draw(context);
+		obstacles[i].draw(context);	//draw obstacles
 	}
-
 	player.draw(context);
 
 	this.camera.drawAbsolute(context, function(){	
@@ -357,6 +468,11 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		context.fillStyle = "#FFFFFF"
 		context.fillText(score, 100, 100);
 	})
+
+	var wallW = game.animations.get("wall-1-left").width;
+	var meterW = canvas.width - wallW * 2;
+	context.fillStyle = "#BADA55"
+	context.fillRect(wallW, this.camera.y + 10, meterW * (meter / 1000), 30);
 
 	var ftb = this.timer("fade to black");
 	if (ftb > 0) {
