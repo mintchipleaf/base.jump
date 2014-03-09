@@ -34,15 +34,14 @@ var manifest = {
 			"flip": "horizontal"
 		},
 		"wall-1-right": {
-			"strip": "images/wall1.png",
+			"strip": "images/wall-right.png",
 			"frames": 1,
 			"msPerFrame": 300
 		},
 		"wall-1-left": {
-			"strip": "images/wall1.png",
+			"strip": "images/wall-left.png",
 			"frames": 1,
-			"msPerFrame": 300,
-			"flip": "horizontal"
+			"msPerFrame": 300
 		},
 		"window-2-left": {
 			"strip": "images/wall2.png",
@@ -190,9 +189,9 @@ function makeObstacle(onRight, y, getWindowImages) {
 	if (Math.random() > 0.5 || waitingToStart) {
 		img = game.animations.get(onRight ? "sign-right" : "sign-left");
 		if (onRight) {
-			obstacle = new Splat.AnimatedEntity(canvas.width - wallImg.width - img.width + 8 + 4, y + 10, 8, 211, img, -4, -10);
+			obstacle = new Splat.AnimatedEntity(canvas.width - wallImg.width - img.width + 40, y + 10, 8, 211, img, -4, -10);
 		} else {
-			obstacle = new Splat.AnimatedEntity(x + 29, y + 10, 8, 211, img, -29, -10);
+			obstacle = new Splat.AnimatedEntity(x, y + 10, 8, 211, img, -29, -10);
 		}
 	} else if (Math.random() > 0.4) {
 		img = game.animations.get(onRight ? "float-right" : "float-left");
@@ -204,15 +203,15 @@ function makeObstacle(onRight, y, getWindowImages) {
 		img = game.animations.get(onRight ? "unit-right" : "unit-left");
 		obstacle = new Splat.AnimatedEntity(x, y, img.width, img.height, img, 0, 0);
 		if (onRight) {
-			obstacle.x = canvas.width - wallImg.width - img.width + 8;
+			obstacle.x = canvas.width - wallImg.width - img.width + 15;
 		}
 	} else {
 		img = game.animations.get(onRight ? "car-right" : "car-left");
 		obstacle = new Splat.AnimatedEntity(canvas.x - img.width, y, img.width, img.height, img, 0, 0);
-		obstacle.vx = .5 + Math.random();
+		obstacle.vx = .3 + Math.random();
 		if (onRight) {
 			obstacle.x = canvas.width;
-			obstacle.vx = -.5 - Math.random();
+			obstacle.vx = -.3 - Math.random();
 		}
 	}
 	/*else {
@@ -490,12 +489,20 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 
 }, function(context) {
 	this.camera.drawAbsolute(context, function() {
+		var gradient = context.createLinearGradient(0,0,0,canvas.width);
+		gradient.addColorStop(0,"black");
+		gradient.addColorStop(0.2,"#35171a");
+		gradient.addColorStop(1,"#6e3e62");
+		context.fillStyle=gradient;
+		context.fillRect(0,0,canvas.width,canvas.height);
+	});
+	this.camera.drawAbsolute(context, function() {
 		var bg = game.images.get("bg");
 		for (var y = bgY - bg.height; y <= canvas.height; y += bg.height)  {
 			y = y |0;
 			context.drawImage(bg, 0, y);
 		}
-	});;
+	});
 
 	for (var i = 0; i < walls.length; i++) {
 		walls[i].draw(context);		//draw walls
@@ -514,8 +521,8 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	this.camera.drawAbsolute(context, function(){	
 		context.font = "50px consolas"
 		context.fillStyle = "#FFFFFF"
-		context.fillText("m", 80, 80);
-		context.fillText(score, 80, 120);
+		context.fillText("m", 100, 80);
+		context.fillText(score, 100, 120);
 	})
 
 	//draw speed
@@ -523,8 +530,8 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	this.camera.drawAbsolute(context, function(){
 		context.font = "50px consolas"
 		context.fillStyle = "#FFFFFF"
-		context.fillText("km/h", cameraW - 180, 80);
-		context.fillText(/*speed*/ Math.round(tilt), cameraW - 105, 120)
+		context.fillText("km/h", cameraW - 200, 80);
+		context.fillText(speed, cameraW - 150, 120)
 	})
 
 	//draw meter
