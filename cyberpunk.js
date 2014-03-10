@@ -129,7 +129,7 @@ var manifest = {
 			"msPerFrame": 70
 		}
 	}
-}
+};
 
 var game = new Splat.Game(canvas, manifest);
 
@@ -163,7 +163,7 @@ window.addEventListener('deviceorientation', function(event) {
 
 
 function chooseWall(y, possibleWalls, isLeft) {
-	var i = Math.random() * possibleWalls.length |0;
+    var i = Math.random() * possibleWalls.length |0;
 	var name = isLeft ? "-left" : "-right";
 	var anim = game.animations.get(possibleWalls[i] + name);
 	var x = 0;
@@ -225,10 +225,10 @@ function makeObstacle(onRight, y, getWindowImages) {
 	} else {
 		img = game.animations.get(onRight ? "car-right" : "car-left");
 		obstacle = new Splat.AnimatedEntity(0 - img.width, y, img.width, img.height, img, 0, 0);
-		obstacle.vx = .3 + Math.random();
+		obstacle.vx = 0.3 + Math.random();
 		if (onRight) {
 			obstacle.x = canvas.width;
-			obstacle.vx = -.3 - Math.random();
+			obstacle.vx = -0.3 - Math.random();
 		}
 	}
 	/*else {
@@ -243,7 +243,7 @@ function makeObstacle(onRight, y, getWindowImages) {
 
 var lastObstacle = false;
 var i = 0;
-;function makeWall(y) {
+function makeWall(y) {
 	var hasObstacle = !lastObstacle;
 	if (!hasObstacle) {
 		i++;
@@ -277,7 +277,7 @@ var i = 0;
 
 function populateWallsDown(scene) {
 	var wallH = game.animations.get("wall-1-left").height;
-	if (walls.length == 0) {
+	if (walls.length === 0) {
 		makeWall(scene.camera.y);
 	}
 	while (walls[0].y < scene.camera.y + scene.camera.height) {
@@ -311,7 +311,7 @@ function addPickups(scene) {
 			nextPickupY += 800;
 			placePickup = true;
 		}
-	 	if (lastPickup.y > scene.camera.y || nextPickupX > maxRight || nextPickupX < maxLeft ) {
+		if (lastPickup.y > scene.camera.y || nextPickupX > maxRight || nextPickupX < maxLeft ) {
 			placePickup = false;
 		}
 	} if (placePickup) {
@@ -395,15 +395,15 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		right = false;
 		lastDirection = "left";
 		meter -= 1;
-		player.vx = -.7;
+		player.vx = -0.7;
 	} if (game.keyboard.isPressed("right") || tilt > 5) {
 		right = true;
 		left = false;
 		meter -= 1;
 		lastDirection = "right";
-		player.vx = .7;
+		player.vx = 0.7;
 	} if (game.keyboard.isPressed("up") || game.mouse.buttons[0]) {
-		player.vy -= .005;
+		player.vy -= 0.005;
 		meter -= 1.5;
 		up = true;
 		//game.mouse.buttons[0] = false;
@@ -414,7 +414,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	//run out of meter
 	if (meter <= 0) {
 		dead = true;
-		meter = 0; 	
+	meter = 0;
 	}
 
 	//fade to black on death
@@ -456,7 +456,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	//wall collision
 	for (var i = 0; i < walls.length; i++) {
 		var wall = walls[i];
-		var playervx = player.vx
+		var playervx = player.vx;
 		if (player.collides(wall)) {
 			meter -= 100;
 			//game.sounds.play("wall");
@@ -466,7 +466,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 				player.vx = 10;
 			} 
 			if (player.vy > 2) {
-				player.vy -= .5;
+				player.vy -= 0.5;
 				if (player.vy < 2) {
 					player.vy = 2;
 				}
@@ -538,13 +538,13 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		}
 	});
 
-	color = "4FF9FE"
+	color = "4FF9FE";
 	if (meter < 750) {
-		color = "#BADA55"
+		color = "#BADA55";
 	} if (meter < 500) {
-		color = "#E5DE59"
+		color = "#E5DE59";
 	} if (meter < 250) {
-		color = "#FE3E89"	
+		color = "#FE3E89";
 	}
 
 
@@ -585,7 +585,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		var hudimg = game.animations.get("hud");
 		hud = new Splat.AnimatedEntity(wallW, 10, hudimg.width, hudimg.height, hudimg, 0, 0);
 	
-		context.font = "bold 40px pixelade"
+		context.font = "bold 40px pixelade";
 		context.fillStyle = color;
 		//context.fillText("m", 230, 75);
 		context.fillText(score + " m", wallW + 50, 75);
@@ -605,7 +605,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		context.moveTo(rightWallX - 45, 83); context.lineTo(rightWallX - 175,83); //right underline
 		context.lineWidth = 10;
 		context.stroke();*/
-	})
+	});
 
 	//smoke
 
