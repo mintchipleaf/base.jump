@@ -40,7 +40,7 @@ var manifest = {
 		"smoke":{
 			"strip": "images/smoke.png",
 			"frames": 4,
-			"msPerFrame": 100, 
+			"msPerFrame": 100
 		},
 		"hud":{
 			"strip": "images/hud.png",
@@ -137,7 +137,7 @@ var player;
 var walls = [];
 var obstacles = [];
 var pickups = [];
-var smoke = [];
+var smokes = [];
 var dead = false;
 var waitingToStart = true;
 var left = false;
@@ -320,6 +320,18 @@ function addPickups(scene) {
 	}
 }
 
+function makeSmoke(scene) {
+	var img = game.animations.get("smoke");
+	var lastSmoke = smokes[smokes.length - 1];
+	var nextSmokeY = player.y;
+	var nextSmokeX = player.x;
+
+	if (!lastSmoke || lastSmoke.y < player.y + img.height) {
+		var smoke = new Splat.AnimatedEntity(nextSmokeX, nextSmokeY, img.width, img.height, img, 0, 0);
+		smokes.push(smoke);
+	}
+}
+
 function setBest(b) {
 	best = b;
 	var expire = new Date();
@@ -383,6 +395,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	}
 	
 	populateWallsDown(this);
+	makeSmoke(this);
 
 	this.camera.vy = player.vy;
 	player.move(elapsedMillis);
@@ -548,6 +561,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	}
 
 
+	/*NEED TO CHANGE > 0 TO > this.camera.y OR SOMETHING*/
 	for (var i = 0; i < pickups.length; i++) {
 		if (!pickups[i].counted && pickups[i].y + pickups[i].height > 0) {
 			var x = pickups[i].x;
@@ -573,6 +587,14 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 			walls.splice(walls[i],1);
 		}
 	}
+	/*for (var i = 0; i < walls.length; i++) {
+		console.log(smokes[i]);
+		if (smokes[i].y + smokes[i].height > 0) {
+			smokes[i].draw(context);		//draw smoke
+		} else {
+			smokes.splice(smokes[i],1);
+		}
+	}*/
 	//console.log("p: " + pickups.length);
 	//console.log("o: " + obstacles.length);
 	//console.log("w: " + walls.length);
