@@ -7,6 +7,9 @@ var manifest = {
 		"wall-2": "images/wall2.png"
 	},
 	"sounds": {
+		"pickup": "sounds/pickup.wav",
+		"hit": "sounds/hit.wav",
+		"wall": "sounds/wall.wav"
 	},
 	"fonts": [
 	],
@@ -34,15 +37,14 @@ var manifest = {
 			"flip": "horizontal"
 		},
 		"wall-1-right": {
-			"strip": "images/wall1.png",
+			"strip": "images/wall-right.png",
 			"frames": 1,
 			"msPerFrame": 300
 		},
 		"wall-1-left": {
-			"strip": "images/wall1.png",
+			"strip": "images/wall-left.png",
 			"frames": 1,
-			"msPerFrame": 300,
-			"flip": "horizontal"
+			"msPerFrame": 300
 		},
 		"window-2-left": {
 			"strip": "images/wall2.png",
@@ -88,6 +90,28 @@ var manifest = {
 			"msPerFrame": 70,
 			"flip": "horizontal"
 		},
+		"float-left": {
+			"strip": "images/float.png",
+			"frames": 1,
+			"msPerFrame": 70
+		},
+		"float-right": {
+			"strip": "images/float.png",
+			"frames": 1,
+			"msPerFrame": 70,
+			"flip": "horizontal"
+		},
+		"car-left": {
+			"strip": "images/car.png",
+			"frames": 1,
+			"msPerFrame": 70
+		},
+		"car-right": {
+			"strip": "images/car.png",
+			"frames": 1,
+			"msPerFrame": 70,
+			"flip": "horizontal"
+		},		
 		"pickup": {
 			"strip": "images/pickup.png",
 			"frames": 1,
@@ -108,14 +132,22 @@ var left = false;
 var right = true;
 var up = false;
 var newBest = false;
+var collidesound = false;
 var wallImages = ["wall-1"];
 var windowImages = ["window-1"];
 var bgY = 0;
 var score = 0;
 var best = 0;
+var speed = 0;
 var startPos = 0;
 var meter = 1000;
 var lastDirection;
+var tilt = 0;
+
+window.addEventListener('deviceorientation', function(event) {
+	tilt = event.gamma;
+});	
+
 
 function chooseWall(y, possibleWalls, isLeft) {
 	var i = Math.random() * possibleWalls.length |0;
@@ -157,21 +189,36 @@ function makeObstacle(onRight, y, getWindowImages) {
 	var obstacle;
 
 	var wallImg = game.animations.get("wall-1-left");
-	var x = wallImg.width - 8;	
-	if (Math.random() > 0.3 || waitingToStart) {
+	var x = wallImg.width - 8;
+	if (Math.random() > 0.5 || waitingToStart) {
 		img = game.animations.get(onRight ? "sign-right" : "sign-left");
 		if (onRight) {
-			obstacle = new Splat.AnimatedEntity(canvas.width - wallImg.width - img.width + 8 + 4, y + 10, 8, 211, img, -4, -10);
+			obstacle = new Splat.AnimatedEntity(canvas.width - wallImg.width - img.width + 40, y + 10, 8, 211, img, -4, -10);
 		} else {
-			obstacle = new Splat.AnimatedEntity(x + 29, y + 10, 8, 211, img, -29, -10);
+			obstacle = new Splat.AnimatedEntity(x, y + 10, 8, 211, img, -29, -10);
 		}
-	} else /*if (Math.random() > 0.5)*/ {
+	} else if (Math.random() > 0.4) {
+		img = game.animations.get(onRight ? "float-right" : "float-left");
+		obstacle = new Splat.AnimatedEntity((canvas.width / 2 * Math.random()) + wallImg.width, y, img.width, img.height, img, 0, 0);
+		if (onRight) {
+			obstacle.x = (canvas.width / 2 * Math.random()) + (canvas.width / 2) - wallImg.width;
+		}
+	} else if (Math.random() > 0.5) {
 		img = game.animations.get(onRight ? "unit-right" : "unit-left");
 		obstacle = new Splat.AnimatedEntity(x, y, img.width, img.height, img, 0, 0);
 		if (onRight) {
-			obstacle.x = canvas.width - wallImg.width - img.width + 8;
+			obstacle.x = canvas.width - wallImg.width - img.width + 15;
 		}
-	} /*else {
+	} else {
+		img = game.animations.get(onRight ? "car-right" : "car-left");
+		obstacle = new Splat.AnimatedEntity(canvas.x - img.width, y, img.width, img.height, img, 0, 0);
+		obstacle.vx = .3 + Math.random();
+		if (onRight) {
+			obstacle.x = canvas.width;
+			obstacle.vx = -.3 - Math.random();
+		}
+	}
+	/*else {
 		img = game.animations.get(onRight ? "billboard-right" : "billboard-left");
 		obstacle = new Splat.AnimatedEntity(x, y, img.width, img.height, img, 0, 0);
 		if (onRight) {
@@ -183,12 +230,12 @@ function makeObstacle(onRight, y, getWindowImages) {
 
 var lastObstacle = false;
 var i = 0;
-function makeWall(y) {
+;function makeWall(y) {
 	var hasObstacle = !lastObstacle;
 	if (!hasObstacle) {
 		i++;
 	}
-	if (i == 2) {
+	if (i == 4) {
 		hasObstacle = true;
 		i = 0;
 	}	
@@ -235,16 +282,16 @@ function addPickups(scene) {
 	var lastPickup = pickups[pickups.length - 1];
 	var nextPickupY = scene.camera.y + scene.camera.height;
 	var wallImg = game.animations.get("wall-1-left");
+	var img = game.animations.get("pickup");
 	var maxLeft = wallImg.width;
-	var maxRight = canvas.width - wallImg.width;
+	var maxRight = canvas.width - wallImg.width - img.width;
 	var nextPickupX = Math.random() * canvas.width;
 	var placePickup = false;
 	var pickupChance = Math.random();
 
 	if (!lastPickup) {
 		placePickup = true;
-	}
-	if(lastPickup) {
+	} if(lastPickup) {
 		if (pickupChance > 0.5) { 
 			nextPickupY += 800;
 		} else {
@@ -255,7 +302,6 @@ function addPickups(scene) {
 			placePickup = false;
 		}
 	} if (placePickup) {
-		var img = game.animations.get("pickup");
 		var pickup = new Splat.AnimatedEntity(nextPickupX, nextPickupY, img.width, img.height, img, 0, 0);
 		pickups.push(pickup);
 	}
@@ -270,7 +316,7 @@ function setBest(b) {
 }
 
 function anythingWasPressed() {
-	return game.keyboard.isPressed("left") || game.keyboard.isPressed("right") || game.keyboard.isPressed("up"); //|| game.mouse.buttons[0];
+	return game.keyboard.isPressed("left") || game.keyboard.isPressed("right") || game.keyboard.isPressed("up") || game.mouse.buttons[0];
 }
 
 game.scenes.add("title", new Splat.Scene(canvas, function() {
@@ -280,8 +326,10 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	dead = false;
 	this.camera.y = 0;
 	score = 0;
+	speed = 0;
 	meter = 1000;
 	newBest = false;
+	collidesound = false;
 
 	var playerImg = game.animations.get("player-right");
 	player = new Splat.AnimatedEntity(canvas.width / 2, canvas.height / 10, 40, 100, playerImg, 0, 0);
@@ -289,29 +337,27 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 }, function(elapsedMillis) {
 	if(waitingToStart){
 		this.camera.vy = player.vy;
-		player.vy = 0.5;
+		player.vy = 1;
 		if(anythingWasPressed()){
 			startPos = player.y;
 			waitingToStart = false;
 		}
 	}
-	if (!waitingToStart) {
+	if (!waitingToStart && !dead) {
 		player.vy += elapsedMillis * 0.00007;
 		addPickups(this);
-	}
-
-	//scoring
-	if(!waitingToStart) {
-		score = Math.round((player.y - startPos) / 300);
+		score = Math.round((player.y - startPos) / 200);// * player.vy);
 		if (score > best) {
 			setBest(score);
 			newBest = true;
 		}
 	}
 
+	speed = Math.round(player.vy * 2 * 20);
+
 	//don't allow upwards movement
-	if (player.vy < 0) {
-		player.vy = 0;
+	if (player.vy < 1) {
+		player.vy = 1;
 	}
 
 	//cap meter at 1000
@@ -324,23 +370,26 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	this.camera.vy = player.vy;
 	player.move(elapsedMillis);
 
+	/* TILT IS SHIT
+	WHAT IS HAPPENING*/
 	//move keys
-	if (game.keyboard.isPressed("left")) {
+	if (game.keyboard.isPressed("left") || tilt < -5) {
 		left = true;
 		right = false;
 		lastDirection = "left";
 		meter -= 1;
 		player.vx = -.7;
-	} if (game.keyboard.isPressed("right")) {
+	} if (game.keyboard.isPressed("right") || tilt > 5) {
 		right = true;
 		left = false;
 		meter -= 1;
 		lastDirection = "right";
 		player.vx = .7;
-	} if (game.keyboard.isPressed("up")) {
+	} if (game.keyboard.isPressed("up") || game.mouse.buttons[0]) {
 		player.vy -= .005;
 		meter -= 1.5;
 		up = true;
+		//game.mouse.buttons[0] = false;
 	} if (!game.keyboard.isPressed("left") && !game.keyboard.isPressed("right")) {
 		player.vx = 0;
 	}
@@ -392,26 +441,35 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		var playervx = player.vx
 		if (player.collides(wall)) {
 			meter -= 100;
+			game.sounds.play("wall");
 			if (lastDirection == "right") {
 				player.vx = -10;
 			} else if (lastDirection == "left") {
 				player.vx = 10;
 			} 
+			if (player.vy > 2) {
+				player.vy -= .5;
+				if (player.vy < 2) {
+					player.vy = 2;
+				}
+			}
 		}
 	}
-
+//console.log(player.vy);
 	//pickup collision
 	for (var i = 0; i < pickups.length; i++) {
 		var pickup = pickups[i];
 		if (player.collides(pickup) && !pickup.counted) {
-			meter += 200;
+			meter += 100;
 			pickup.counted = true;
+			game.sounds.play("pickup");
 		}
 	}
 
 	//obstacle collision
 	for (var i = 0; i < obstacles.length; i++) {
 		var obstacle = obstacles[i];
+			obstacle.move(elapsedMillis);
 		if (player.collides(obstacle)) {
 			/*if (!this.timer("flash")) {
 				var explode;
@@ -430,25 +488,34 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 				}
 			}
 			this.startTimer("flash");*/
-			meter -= 100;
-			if (player.vy < 2) {
-				//player.vy = player.vy / 2;
-			} else {
-				player.vy -= 2;
+			
+			//meter -= 100;
+			//player.x = (canvas.width / 2) - (player.width / 2)
+			dead = true;
+			if (!collidesound) {
+				game.sounds.play("hit");
+				collidesound = true;
 			}
-			player.x = (canvas.width / 2) - (player.width / 2)
 			return;
 		}
 	}
 
 }, function(context) {
 	this.camera.drawAbsolute(context, function() {
-	var bg = game.images.get("bg");
-	for (var y = bgY - bg.height; y <= canvas.height; y += bg.height)  {
-		y = y |0;
-		context.drawImage(bg, 0, y);
-	}
-	});;
+		var gradient = context.createLinearGradient(0,0,0,canvas.width);
+		gradient.addColorStop(0,"black");
+		gradient.addColorStop(0.2,"#35171a");
+		gradient.addColorStop(1,"#6e3e62");
+		context.fillStyle=gradient;
+		context.fillRect(0,0,canvas.width,canvas.height);
+	});
+	this.camera.drawAbsolute(context, function() {
+		var bg = game.images.get("bg");
+		for (var y = bgY - bg.height; y <= canvas.height; y += bg.height)  {
+			y = y |0;
+			context.drawImage(bg, 0, y);
+		}
+	});
 
 	for (var i = 0; i < walls.length; i++) {
 		walls[i].draw(context);		//draw walls
@@ -463,17 +530,30 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	}
 	player.draw(context);
 
+	//draw score
 	this.camera.drawAbsolute(context, function(){	
-		context.font = "75px consolas"
+		context.font = "50px consolas"
 		context.fillStyle = "#FFFFFF"
-		context.fillText(score, 100, 100);
+		context.fillText("m", 100, 80);
+		context.fillText(score, 100, 120);
 	})
 
+	//draw speed
+	cameraW = this.camera.width;
+	this.camera.drawAbsolute(context, function(){
+		context.font = "50px consolas"
+		context.fillStyle = "#FFFFFF"
+		context.fillText("km/h", cameraW - 200, 80);
+		context.fillText(speed, cameraW - 150, 120)
+	})
+
+	//draw meter
 	var wallW = game.animations.get("wall-1-left").width;
 	var meterW = canvas.width - wallW * 2;
 	context.fillStyle = "#BADA55"
 	context.fillRect(wallW, this.camera.y + 10, meterW * (meter / 1000), 30);
 
+	//draw fade to black
 	var ftb = this.timer("fade to black");
 	if (ftb > 0) {
 		var opacity = ftb / 300;
@@ -483,9 +563,9 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		this.camera.drawAbsolute(context, function() {
 			context.fillStyle = "#ffffff";
 			context.font = "50px pixelade";
-			context.fillText("SCORE", 0, 300);
+			context.fillText("DISTANCE", 0, 300);
 			context.font = "100px pixelade";
-			context.fillText(score, 0, 400);
+			context.fillText(score + " m", 0, 400);
 
 			context.font = "50px pixelade";
 			if (newBest) {
@@ -496,7 +576,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 			}
 
 			context.font = "100px pixelade";
-			context.fillText(best, 0, 700);
+			context.fillText(best + " m", 0, 700);
 		});
 		return;
 	}
