@@ -12,6 +12,7 @@ var manifest = {
 		//"wall": "sounds/wall.wav"
 	},
 	"fonts": [
+		//"pixelade"
 	],
 	"animations": {
 		"player-right":{
@@ -35,6 +36,16 @@ var manifest = {
 			"frames": 1,
 			"msPerFrame": 70,
 			"flip": "horizontal"
+		},
+		"smoke":{
+			"strip": "images/smoke.png",
+			"frames": 4,
+			"msPerFrame": 100, 
+		},
+		"hud":{
+			"strip": "images/hud.png",
+			"frames": 1,
+			"msPerFrame": 70
 		},
 		"wall-1-right": {
 			"strip": "images/wall-right.png",
@@ -126,6 +137,7 @@ var player;
 var walls = [];
 var obstacles = [];
 var pickups = [];
+var smoke = [];
 var dead = false;
 var waitingToStart = true;
 var left = false;
@@ -133,6 +145,7 @@ var right = true;
 var up = false;
 var newBest = false;
 var collidesound = false;
+var color;
 var wallImages = ["wall-1"];
 var windowImages = ["window-1"];
 var bgY = 0;
@@ -320,8 +333,9 @@ function anythingWasPressed() {
 }
 
 game.scenes.add("title", new Splat.Scene(canvas, function() {
-	walls = []
+	walls = [];
 	obstacles = [];
+	smoke = [];
 	waitingToStart = true;
 	dead = false;
 	this.camera.y = 0;
@@ -330,15 +344,18 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	meter = 1000;
 	newBest = false;
 	collidesound = false;
+	this.startTimer("start");
 
 	var playerImg = game.animations.get("player-right");
-	player = new Splat.AnimatedEntity(canvas.width / 2, canvas.height / 10, 40, 100, playerImg, 0, 0);
+	player = new Splat.AnimatedEntity(canvas.width / 2, 100, 40, 100, playerImg, 0, 0);
 
 }, function(elapsedMillis) {
 	if(waitingToStart){
+		var startTimer = this.timer("start");
 		this.camera.vy = player.vy;
 		player.vy = 1;
-		if(anythingWasPressed()){
+		if(startTimer > 100 && anythingWasPressed()){
+			this.stopTimer("start");
 			startPos = player.y;
 			waitingToStart = false;
 		}
@@ -397,6 +414,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	//run out of meter
 	if (meter <= 0) {
 		dead = true;
+		meter = 0; 	
 	}
 
 	//fade to black on death
@@ -460,7 +478,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	for (var i = 0; i < pickups.length; i++) {
 		var pickup = pickups[i];
 		if (player.collides(pickup) && !pickup.counted) {
-			meter += 100;
+			meter += 150;
 			pickup.counted = true;
 			//game.sounds.play("pickup");
 		}
@@ -501,6 +519,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	}
 
 }, function(context) {
+	//draw background gradient
 	this.camera.drawAbsolute(context, function() {
 		var gradient = context.createLinearGradient(0,0,0,canvas.width);
 		gradient.addColorStop(0,"black");
@@ -509,6 +528,8 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		context.fillStyle=gradient;
 		context.fillRect(0,0,canvas.width,canvas.height);
 	});
+
+	//draw background overlay (lines)
 	this.camera.drawAbsolute(context, function() {
 		var bg = game.images.get("bg");
 		for (var y = bgY - bg.height; y <= canvas.height; y += bg.height)  {
@@ -517,41 +538,82 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		}
 	});
 
-	for (var i = 0; i < walls.length; i++) {
-		walls[i].draw(context);		//draw walls
+	color = "4FF9FE"
+	if (meter < 750) {
+		color = "#BADA55"
+	} if (meter < 500) {
+		color = "#E5DE59"
+	} if (meter < 250) {
+		color = "#FE3E89"	
 	}
+
+
 	for (var i = 0; i < pickups.length; i++) {
-		if (!pickups[i].counted) {
-			pickups[i].draw(context);	//draw pickups
+		if (!pickups[i].counted && pickups[i].y + pickups[i].height > 0) {
+			var x = pickups[i].x;
+			var y = pickups[i].y;
+			context.fillStyle = color;
+			context.fillRect(x,y,50,50);
+			//pickups[i].draw(context);	//draw pickups
+		} else {
+			pickups.splice(pickups[i], 1);
 		}
 	}
 	for (var i = 0; i < obstacles.length; i++) {
-		obstacles[i].draw(context);	//draw obstacles
+		if (obstacles[i].y + obstacles[i].height > 0) {
+			obstacles[i].draw(context);	//draw obstacles
+		} else {
+			obstacles.splice(obstacles[i],1);
+		}
 	}
-	player.draw(context);
-
-	//draw score
-	this.camera.drawAbsolute(context, function(){	
-		context.font = "50px consolas"
-		context.fillStyle = "#FFFFFF"
-		context.fillText("m", 100, 80);
-		context.fillText(score, 100, 120);
-	})
-
-	//draw speed
+	for (var i = 0; i < walls.length; i++) {
+		if (walls[i].y + walls[i].height > 0) {
+			walls[i].draw(context);		//draw walls
+		} else {
+			walls.splice(walls[i],1);
+		}
+	}
+	//console.log("p: " + pickups.length);
+	//console.log("o: " + obstacles.length);
+	//console.log("w: " + walls.length);
+	//draw hud
 	cameraW = this.camera.width;
-	this.camera.drawAbsolute(context, function(){
-		context.font = "50px consolas"
-		context.fillStyle = "#FFFFFF"
-		context.fillText("km/h", cameraW - 200, 80);
-		context.fillText(speed, cameraW - 150, 120)
-	})
-
-	//draw meter
 	var wallW = game.animations.get("wall-1-left").width;
 	var meterW = canvas.width - wallW * 2;
-	context.fillStyle = "#BADA55"
-	context.fillRect(wallW, this.camera.y + 10, meterW * (meter / 1000), 30);
+	var rightWallX = canvas.width - wallW;	
+	this.camera.drawAbsolute(context, function(){
+		var hudimg = game.animations.get("hud");
+		hud = new Splat.AnimatedEntity(wallW, 10, hudimg.width, hudimg.height, hudimg, 0, 0);
+	
+		context.font = "bold 40px pixelade"
+		context.fillStyle = color;
+		//context.fillText("m", 230, 75);
+		context.fillText(score + " m", wallW + 50, 75);
+		//context.fillText("km/h", cameraW - 230, 75);
+		context.fillText(speed + " km/h", rightWallX - 170, 75);
+	//draw HUD lines
+		/*context.strokeStyle = color;
+		context.moveTo(wallW + 5, 10); context.lineTo(wallW + 5,45); //left meter wall
+		//context.moveTo(wallW + 5, 7); context.lineTo(rightWallX - 5,7); //top meter wall
+		//context.moveTo(wallW + 5, 45); context.lineTo(rightWallX - 5,45); //bottom meter wall
+		context.moveTo(rightWallX - 5, 10); context.lineTo(rightWallX - 5,50); //right meter wall
+		//left hud section
+		context.moveTo(wallW + 3, 40); context.lineTo(wallW + 50,85); //left angle
+		context.moveTo(wallW + 45, 83); context.lineTo(wallW + 175,83); //left underline
+		//right hud section
+		context.moveTo(rightWallX - 3, 45); context.lineTo(rightWallX - 50,85); //right angle
+		context.moveTo(rightWallX - 45, 83); context.lineTo(rightWallX - 175,83); //right underline
+		context.lineWidth = 10;
+		context.stroke();*/
+	})
+
+	//smoke
+
+	player.draw(context); //draw player
+
+	//draw meter
+	context.fillStyle = color;
+	context.fillRect(wallW + 10, this.camera.y + 10, meterW * (meter / 1000) - 20, 30);
 
 	//draw fade to black
 	var ftb = this.timer("fade to black");
@@ -569,7 +631,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 
 			context.font = "50px pixelade";
 			if (newBest) {
-				context.fillStyle = "rgba(0, 150, 0, 1)";
+				context.fillStyle = color;
 				context.fillText("NEW BEST!", 0, 600);
 			} else {
 				context.fillText("BEST", 0, 600);
@@ -580,6 +642,8 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		});
 		return;
 	}
+
+
 
 }));
 game.scenes.switchTo("loading");
