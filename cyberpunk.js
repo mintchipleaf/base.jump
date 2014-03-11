@@ -414,7 +414,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	player = new Splat.AnimatedEntity(canvas.width / 2, 100, 61, 96, playerImg, -49, -19);
 
 }, function(elapsedMillis) {
-	if(waitingToStart){
+	if(newStart){
 		var startTimer = this.timer("start");
 		this.camera.vy = player.vy;
 		player.vy = 1;
