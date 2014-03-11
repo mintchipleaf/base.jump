@@ -1,4 +1,19 @@
-var canvas = document.getElementById("game");
+// Hello.
+//
+// This is JSHint, a tool that helps to detect errors and potential
+// problems in your JavaScript code.
+//
+// To start, simply enter some JavaScript anywhere on this page. Your
+// report will appear on the right side.
+//
+// Additionally, you can toggle specific options in the Configure
+// menu.
+
+function main() {
+  return 'Hello, World!';
+}
+
+main();var canvas = document.getElementById("game");
 
 var manifest = {
 	"images": {
@@ -7,32 +22,58 @@ var manifest = {
 		"wall-2": "images/wall2.png"
 	},
 	"sounds": {
-		//"pickup": "sounds/pickup.wav",
-		//"hit": "sounds/hit.wav",
-		//"wall": "sounds/wall.wav"
+		"pickup1": "sounds/pickup1.wav",
+		"pickup2": "sounds/pickup2.wav",
+		"pickup3": "sounds/pickup3.wav",
+		"pickup4": "sounds/pickup4.wav",
+		"hit": "sounds/hit.wav",
+		"wall": "sounds/wall.wav",
+		"music": "sounds/Multifaros-The_Factory.mp3"
 	},
 	"fonts": [
-		//"pixelade"
+		"pixelade"
 	],
 	"animations": {
-		"player-right":{
+		"player":{
 			"strip": "images/player.png",
 			"frames": 1,
 			"msPerFrame": 70
 		},
-		"player-left":{
+		"player-l": {
 			"strip": "images/player.png",
 			"frames": 1,
 			"msPerFrame": 70,
 			"flip": "horizontal"
 		},
-		"player-boost-right":{
+		"player-right":{
+			"strip": "images/player-side.png",
+			"frames": 1,
+			"msPerFrame": 70
+		},
+		"player-left":{
+			"strip": "images/player-side.png",
+			"frames": 1,
+			"msPerFrame": 70,
+			"flip": "horizontal"
+		},
+		"player-boost":{
 			"strip": "images/playerboost.png",
 			"frames": 1,
-			"msPerFrame": 70, 
+			"msPerFrame": 70 
+		},
+		"player-boost-l":{
+			"strip": "images/playerboost.png",
+			"frames": 1,
+			"msPerFrame": 70,
+			"flip": "horizontal" 
+		},
+		"player-boost-right":{
+			"strip": "images/playerboost-side.png",
+			"frames": 1,
+			"msPerFrame": 70 
 		},
 		"player-boost-left":{
-			"strip": "images/playerboost.png",
+			"strip": "images/playerboost-side.png",
 			"frames": 1,
 			"msPerFrame": 70,
 			"flip": "horizontal"
@@ -140,14 +181,17 @@ var pickups = [];
 var smokes = [];
 var dead = false;
 var waitingToStart = true;
+var newStart = true;
 var left = false;
 var right = true;
 var up = false;
 var newBest = false;
 var collidesound = false;
+var musicTimer;
 var color;
 var wallImages = ["wall-1"];
 var windowImages = ["window-1"];
+var pickupSounds = ["pickup1", "pickup2", "pickup3", "pickup4"];
 var bgY = 0;
 var score = 0;
 var best = 0;
@@ -202,7 +246,7 @@ function makeObstacle(onRight, y, getWindowImages) {
 	var obstacle;
 
 	var wallImg = game.animations.get("wall-1-left");
-	var x = wallImg.width - 8;
+	var x = wallImg.width - 40;
 	if (Math.random() > 0.6 || waitingToStart) {
 		img = game.animations.get(onRight ? "sign-right" : "sign-left");
 		if (onRight) {
@@ -220,7 +264,7 @@ function makeObstacle(onRight, y, getWindowImages) {
 		img = game.animations.get(onRight ? "billboard-right" : "billboard-left");
 		obstacle = new Splat.AnimatedEntity(x, y, img.width, img.height, img, 0, 0);
 		if (onRight) {
-			obstacle.x = canvas.width - wallImg.width - img.width + 15;
+			obstacle.x = canvas.width - wallImg.width - img.width + 40;
 		}
 	} else {
 		img = game.animations.get(onRight ? "car-right" : "car-left");
@@ -344,6 +388,14 @@ function anythingWasPressed() {
 	return game.keyboard.isPressed("left") || game.keyboard.isPressed("right") || game.keyboard.isPressed("up") || game.mouse.buttons[0];
 }
 
+/*game.scenes.add("title", new Splat.Scene(canvas, function() {
+	}, function(elapsedMillis) {
+		//game.sounds.play("music", true);
+		game.scenes.switchTo("main");
+	}, function(context) {
+
+}));*/
+
 game.scenes.add("title", new Splat.Scene(canvas, function() {
 	walls = [];
 	obstacles = [];
@@ -359,7 +411,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	this.startTimer("start");
 
 	var playerImg = game.animations.get("player-right");
-	player = new Splat.AnimatedEntity(canvas.width / 2, 100, 40, 100, playerImg, 0, 0);
+	player = new Splat.AnimatedEntity(canvas.width / 2, 100, 61, 96, playerImg, -49, -19);
 
 }, function(elapsedMillis) {
 	if(waitingToStart){
@@ -367,8 +419,10 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		this.camera.vy = player.vy;
 		player.vy = 1;
 		if(startTimer > 100 && anythingWasPressed()){
+			game.sounds.play("music", true);
 			this.stopTimer("start");
 			startPos = player.y;
+			newStart = false;
 			waitingToStart = false;
 		}
 	}
@@ -403,6 +457,9 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	/* TILT IS SHIT
 	WHAT IS HAPPENING*/
 	//move keys
+	left = false;
+	right = false;
+	up = false;
 	if (game.keyboard.isPressed("left") || tilt < -5) {
 		left = true;
 		right = false;
@@ -450,7 +507,17 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	} else if (right){
 		player.sprite = game.animations.get("player-right");
 	}
+	if (!up && !left && !right) {
+		player.sprite = game.animations.get("player-l");
+		if(lastDirection == "right") {
+			player.sprite = game.animations.get("player");
+		}
+	}
 	if (up){
+		player.sprite = game.animations.get("player-boost-l")
+		if (lastDirection == "right") {
+			player.sprite = game.animations.get("player-boost");
+		}
 		if(left) {
 			player.sprite = game.animations.get("player-boost-left");
 		} else if (right) {
@@ -472,7 +539,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		var playervx = player.vx;
 		if (player.collides(wall)) {
 			meter -= 100;
-			//game.sounds.play("wall");
+			game.sounds.play("wall");
 			if (lastDirection == "right") {
 				player.vx = -10;
 			} else if (lastDirection == "left") {
@@ -494,6 +561,8 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 			meter += 150;
 			pickup.counted = true;
 			//game.sounds.play("pickup");
+			var i = Math.random() * pickupSounds.length |0;
+			game.sounds.play(pickupSounds[i]);
 		}
 	}
 
@@ -524,7 +593,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 			//player.x = (canvas.width / 2) - (player.width / 2)
 			dead = true;
 			if (!collidesound) {
-				//game.sounds.play("hit");
+				game.sounds.play("hit");
 				collidesound = true;
 			}
 			return;
@@ -551,7 +620,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		}
 	});
 
-	color = "4FF9FE";
+	color = "#4FF9FE";
 	if (meter < 750) {
 		color = "#BADA55";
 	} if (meter < 500) {
