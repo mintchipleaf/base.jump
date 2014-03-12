@@ -1,19 +1,4 @@
-// Hello.
-//
-// This is JSHint, a tool that helps to detect errors and potential
-// problems in your JavaScript code.
-//
-// To start, simply enter some JavaScript anywhere on this page. Your
-// report will appear on the right side.
-//
-// Additionally, you can toggle specific options in the Configure
-// menu.
-
-function main() {
-  return 'Hello, World!';
-}
-
-main();var canvas = document.getElementById("game");
+var canvas = document.getElementById("game");
 
 var manifest = {
 	"images": {
@@ -709,6 +694,12 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	//draw meter
 	context.fillStyle = color;
 	context.fillRect(wallW + 10, this.camera.y + 10, meterW * (meter / 1000) - 20, 30);
+
+	if (waitingToStart) {
+		context.fillStyle = "black";
+		context.font="100px pixelade";
+		context.fillText("base.jump", 300, 1000);
+	}
 
 	//draw fade to black
 	var ftb = this.timer("fade to black");
