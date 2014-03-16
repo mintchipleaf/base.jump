@@ -172,6 +172,8 @@ var right = true;
 var up = false;
 var newBest = false;
 var collidesound = false;
+var tiltLeft = false;
+var tiltRight = false;
 var musicTimer;
 var color;
 var wallImages = ["wall-1"];
@@ -373,7 +375,7 @@ function setBest(b) {
 }
 
 function anythingWasPressed() {
-	return game.keyboard.isPressed("left") || game.keyboard.isPressed("right") || game.keyboard.isPressed("up") || game.mouse.buttons[0];
+	return game.keyboard.isPressed("left") || game.keyboard.isPressed("right") || game.keyboard.isPressed("up") || game.mouse.buttons[0] || tilt > 5 || tilt < -5 || game.keyboard.isPressed("space");
 }
 
 /*game.scenes.add("title", new Splat.Scene(canvas, function() {
@@ -397,6 +399,8 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	newBest = false;
 	collidesound = false;
 	this.startTimer("start");
+	tiltLeft = false;
+	tiltRight = false;
 
 	var playerImg = game.animations.get("player-right");
 	player = new Splat.AnimatedEntity(canvas.width / 2, 100, 61, 96, playerImg, -49, -19);
@@ -446,31 +450,40 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	this.camera.vy = player.vy;
 	player.move(elapsedMillis);
 
+	tiltRight = false;
+	tiltLeft = false;
+	if (tilt < -5 && !waitingToStart && !tiltLeft) {
+		tiltLeft = true;
+		tiltRight = false;
+	} if (tilt > 5 && !waitingToStart && !tiltRight ) {
+		tiltRight = true;
+		tiltLeft = false;
+	}
+
 	/* TILT IS SHIT
 	WHAT IS HAPPENING*/
 	//move keys
 	left = false;
 	right = false;
 	up = false;
-	if (game.keyboard.isPressed("left") || tilt < -5) {
+	player.vx = 0;
+	if (game.keyboard.isPressed("left") || tiltLeft) {
 		left = true;
 		right = false;
 		lastDirection = "left";
 		meter -= 1;
 		player.vx = -0.7;
-	} if (game.keyboard.isPressed("right") || tilt > 5) {
+	} if (game.keyboard.isPressed("right") || tiltRight) {
 		right = true;
 		left = false;
 		meter -= 1;
 		lastDirection = "right";
 		player.vx = 0.7;
-	} if (game.keyboard.isPressed("up") || game.mouse.buttons[0]) {
+	} if (game.keyboard.isPressed("up") || game.mouse.buttons[0] || game.keyboard.isPressed("space")) {
 		player.vy -= 0.005;
 		meter -= 1.5;
 		up = true;
 		//game.mouse.buttons[0] = false;
-	} if (!game.keyboard.isPressed("left") && !game.keyboard.isPressed("right")) {
-		player.vx = 0;
 	}
 
 	//run out of meter
@@ -671,9 +684,9 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		context.font = "bold 40px pixelade";
 		context.fillStyle = color;
 		//context.fillText("m", 230, 75);
-		context.fillText(score + " m", wallW + 50, 75);
+		context.fillText(score + " m", wallW + 50, 75); //draw score
 		//context.fillText("km/h", cameraW - 230, 75);
-		context.fillText(speed + " km/h", rightWallX - 170, 75);
+		context.fillText(speed + " km/h", rightWallX - 170, 75); //draw speed
 	//draw HUD lines
 		/*context.strokeStyle = color;
 		context.moveTo(wallW + 5, 10); context.lineTo(wallW + 5,45); //left meter wall
