@@ -234,9 +234,12 @@ function getLastRightWall(y) {
 function makeObstacle(onRight, y, getWindowImages) {
 	var img;
 	var obstacle;
-
+	var billboard; 
 	var wallImg = game.animations.get("wall-1-left");
 	var x = wallImg.width - 40;
+	if (obstacles[obstacles.length -1]){
+		billboard =	obstacles[obstacles.length - 1].sprite == game.animations.get("billboard-left") || obstacles[obstacles.length - 1].sprite == game.animations.get("billboard-right");
+	}
 	if (Math.random() > 0.6 || waitingToStart) {
 		img = game.animations.get(onRight ? "sign-right" : "sign-left");
 		if (onRight) {
@@ -250,7 +253,7 @@ function makeObstacle(onRight, y, getWindowImages) {
 		if (onRight) {	
 			obstacle.x = (canvas.width / 2 * Math.random()) + (canvas.width / 2) - wallImg.width;
 		}
-	} else if (Math.random() > 0.5) {
+	} else if (Math.random() > 0.5 && !billboard) {
 		img = game.animations.get(onRight ? "billboard-right" : "billboard-left");
 		obstacle = new Splat.AnimatedEntity(x, y, img.width, img.height, img, 0, 0);
 		if (onRight) {
@@ -480,7 +483,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		lastDirection = "right";
 		player.vx = 0.7;
 	} if (game.keyboard.isPressed("up") || game.mouse.buttons[0] || game.keyboard.isPressed("space")) {
-		player.vy -= 0.005;
+		player.vy -= 0.01;
 		meter -= 1.5;
 		up = true;
 		//game.mouse.buttons[0] = false;
