@@ -1,7 +1,7 @@
 base.jump
 ============
 
-###Play it at [mintchipleaf.com](http://mintchipleaf.com/games/basejump/)
+Play it at [itch.io](https://mint.itch.io/basejump)
 
 Game for CYBERPUNKJAM
-![alt tag] (https://raw.githubusercontent.com/mintleaf/base.jump/master/itch.io/cpj.png)
+![cpj](base.jump/itch.io/cpj.png)

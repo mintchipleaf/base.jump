@@ -463,8 +463,6 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		tiltLeft = false;
 	}
 
-	/* TILT IS SHIT
-	WHAT IS HAPPENING*/
 	//move keys
 	left = false;
 	right = false;
@@ -643,7 +641,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 		if (!pickups[i].counted && pickups[i].y + pickups[i].height > 0) {
 			var x = pickups[i].x;
 			var y = pickups[i].y;
-			context.fillStyle = color;
+			context.fillStyle = color;``
 			context.fillRect(x,y,50,50);
 			//pickups[i].draw(context);	//draw pickups
 		} else {
@@ -715,7 +713,7 @@ game.scenes.add("title", new Splat.Scene(canvas, function() {
 	context.fillRect(wallW + 10, this.camera.y + 10, meterW * (meter / 1000) - 20, 30);
 
 	if (waitingToStart) {
-		context.fillStyle = "black";
+		context.fillStyle = "white";
 		context.font="100px pixelade";
 		context.fillText("base.jump", 300, 1000);
 	}
